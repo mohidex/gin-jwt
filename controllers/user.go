@@ -5,18 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/mohidex/identity-service/models"
+	"github.com/mohidex/identity-service/utils"
 )
 
 type UserController struct{}
-
-func (u UserController) Retrieve(c *gin.Context) {
-	if c.Param("id") != "" {
-		c.JSON(http.StatusOK, gin.H{"message": "User founded!", "username": "Joe Black"})
-		return
-	}
-	c.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
-	c.Abort()
-}
 
 func (u UserController) Register(c *gin.Context) {
 	var input models.RegistrationInput
@@ -45,4 +37,40 @@ func (u UserController) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"user": savedUser,
 	})
+}
+
+func (u UserController) Login(c *gin.Context) {
+	var input models.LoginInput
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	user, err := models.FindUserByUsername(input.Username)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	if err := user.ValidatePassword(input.Password); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	jwt, err := utils.GenerateJwt(user)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"jwt": jwt})
+
 }

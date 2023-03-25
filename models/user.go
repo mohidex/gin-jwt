@@ -20,6 +20,11 @@ type User struct {
 	Admin    bool   `gorm:"not null;default:false" json:"is_admin"`
 }
 
+// type UserManager struct {
+// 	db   *gorm.DB
+// 	user *User
+// }
+
 func (user *User) Save() (*User, error) {
 	db := settings.GetDB()
 	if result := db.Create(&user); result.Error != nil {
@@ -40,4 +45,21 @@ func (user *User) BeforeSave(*gorm.DB) error {
 
 func (user *User) ValidatePassword(password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+}
+
+func FindUserByUsername(username string) (User, error) {
+	var user User
+
+	if result := settings.DB.Where("username=?", username).Find(&user); result.Error != nil {
+		return User{}, result.Error
+	}
+	return user, nil
+}
+
+func FindUserById(id uint) (User, error) {
+	var user User
+	if err := settings.DB.Preload("Blogs").Where("ID=?", id).Find(&user).Error; err != nil {
+		return User{}, err
+	}
+	return user, nil
 }
