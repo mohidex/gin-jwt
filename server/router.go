@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/mohidex/identity-service/controllers"
+	"github.com/mohidex/identity-service/middleware"
 )
 
 func NewRouter() *gin.Engine {
@@ -16,12 +17,13 @@ func NewRouter() *gin.Engine {
 
 	v1 := router.Group("v1")
 	{
-		userGroup := v1.Group("user")
-		{
-			user := new(controllers.UserController)
-			userGroup.POST("/signup", user.Register)
-			userGroup.POST("/login", user.Login)
-		}
+		user := new(controllers.UserController)
+		v1.POST("/signup", user.Register)
+		v1.POST("/login", user.Login)
+
+		userRoutes := v1.Group("/user")
+		userRoutes.Use(middleware.JWTAuthMiddleware())
+		userRoutes.GET("/me", user.AutorizeToken)
 	}
 	return router
 

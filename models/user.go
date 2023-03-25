@@ -20,11 +20,6 @@ type User struct {
 	Admin    bool   `gorm:"not null;default:false" json:"is_admin"`
 }
 
-// type UserManager struct {
-// 	db   *gorm.DB
-// 	user *User
-// }
-
 func (user *User) Save() (*User, error) {
 	db := settings.GetDB()
 	if result := db.Create(&user); result.Error != nil {
@@ -58,7 +53,7 @@ func FindUserByUsername(username string) (User, error) {
 
 func FindUserById(id uint) (User, error) {
 	var user User
-	if err := settings.DB.Preload("Blogs").Where("ID=?", id).Find(&user).Error; err != nil {
+	if err := settings.DB.Where("ID=?", id).Find(&user).Error; err != nil {
 		return User{}, err
 	}
 	return user, nil

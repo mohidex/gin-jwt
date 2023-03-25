@@ -74,3 +74,15 @@ func (u UserController) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"jwt": jwt})
 
 }
+
+func (u UserController) AutorizeToken(c *gin.Context) {
+	user, err := utils.CurrentUser(c)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"data": user,
+	})
+}

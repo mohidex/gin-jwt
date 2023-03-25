@@ -28,7 +28,7 @@ func GenerateJwt(user models.User) (string, error) {
 	return token.SignedString(privateKey)
 }
 
-func validateJwt(ctx *gin.Context) error {
+func ValidateJWT(ctx *gin.Context) error {
 	token, err := getToken(ctx)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func validateJwt(ctx *gin.Context) error {
 }
 
 func CurrentUser(ctx *gin.Context) (models.User, error) {
-	if err := validateJwt(ctx); err != nil {
+	if err := ValidateJWT(ctx); err != nil {
 		return models.User{}, nil
 	}
 	token, _ := getToken(ctx)
