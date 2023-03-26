@@ -1,15 +1,18 @@
-package server
+package tests
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/mohidex/identity-service/controllers"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHealthCheckRoute(t *testing.T) {
-	router := NewRouter()
+	router := SetUpRouter()
+	healthController := new(controllers.HealthController)
+	router.GET("/health", healthController.Status)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/health", nil)

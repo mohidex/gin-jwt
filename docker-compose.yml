@@ -1,0 +1,35 @@
+version: '3.9'
+services:
+  app:
+    container_name: identity-module
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=authuser
+      - DB_PASSWORD=supersecretpassword
+      - DB_NAME=identity_db
+      - DB_PORT=5432
+      - JWT_PRIVATE_KEY=supersecretkey
+      - JWT_TTL=3600
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports: 
+      - 5000:5000 
+    restart: on-failure
+    volumes:
+      - .:/app/
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:latest
+    container_name: identity_db
+    environment:
+      - POSTGRES_USER=authuser
+      - POSTGRES_PASSWORD=supersecretpassword
+      - POSTGRES_DB=identity_db
+    volumes:
+      - database_postgres:/var/lib/postgresql/data
+    
+volumes:
+  database_postgres:

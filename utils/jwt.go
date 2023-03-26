@@ -15,7 +15,7 @@ import (
 
 var (
 	privateKey = []byte(os.Getenv("JWT_PRIVATE_KEY"))
-	tokenTTL   = os.Getenv("JWT_PRIVATE_KEY")
+	tokenTTL   = os.Getenv("JWT_TTL")
 )
 
 func GenerateJwt(user models.User) (string, error) {
