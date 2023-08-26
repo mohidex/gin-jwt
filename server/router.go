@@ -1,45 +1,40 @@
 package server
 
 import (
-	"os"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 	"github.com/mohidex/identity-service/auth"
 	"github.com/mohidex/identity-service/controllers"
 	"github.com/mohidex/identity-service/db"
 	"github.com/mohidex/identity-service/middleware"
-	"github.com/mohidex/identity-service/settings"
 )
 
-var (
-	privateKey = os.Getenv("JWT_PRIVATE_KEY")
-	tokenTTL   = os.Getenv("JWT_TTL")
-)
+type Routes struct {
+	db   db.Database
+	auth *auth.JWTAuthenticator
+}
 
-func NewRouter() *gin.Engine {
-	router := gin.New()
-	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
-	gormDB := settings.GetDB()
-	dbInstance := db.NewPgDB(gormDB)
-	tokenTtl, _ := strconv.Atoi(tokenTTL)
-	jwtAuthenticator := auth.NewJWTAuthenticator(privateKey, tokenTtl)
+func NewRoutes(db db.Database, auth *auth.JWTAuthenticator) *Routes {
+	return &Routes{
+		db:   db,
+		auth: auth,
+	}
+}
 
-	health := new(controllers.HealthController)
+func (r *Routes) Setup(router *gin.Engine) {
+
+	health := &controllers.HealthController{}
 
 	router.GET("/health", health.Status)
 
+	// Create a new route group
 	v1 := router.Group("v1")
 	{
-		userHandler := &controllers.UserController{DB: dbInstance, Auth: jwtAuthenticator}
+		userHandler := &controllers.UserController{DB: r.db, Auth: r.auth}
 		v1.POST("/signup", userHandler.Register)
 		v1.POST("/login", userHandler.Login)
 
 		userRoutes := v1.Group("/user")
-		userRoutes.Use(middleware.AuthMiddleware(jwtAuthenticator))
+		userRoutes.Use(middleware.AuthMiddleware(r.auth))
 		userRoutes.GET("/me", userHandler.AutorizeToken)
 	}
-	return router
-
 }
