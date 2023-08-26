@@ -5,13 +5,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mohidex/identity-service/auth"
 	"github.com/mohidex/identity-service/db"
 	"github.com/mohidex/identity-service/models"
-	"github.com/mohidex/identity-service/utils"
 )
 
 type UserController struct {
-	DB db.Database
+	DB   db.Database
+	Auth auth.Authenticator
 }
 
 func (uh UserController) Register(c *gin.Context) {
@@ -68,7 +69,7 @@ func (uh UserController) Login(c *gin.Context) {
 		return
 	}
 
-	jwt, err := utils.GenerateJwt(user)
+	token, err := uh.Auth.GenerateToken(context.Background(), user.ID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
@@ -76,12 +77,13 @@ func (uh UserController) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"jwt": jwt})
+	c.JSON(http.StatusOK, gin.H{"jwt": token})
 
 }
 
 func (uh UserController) AutorizeToken(c *gin.Context) {
-	user, err := utils.CurrentUser(c, uh.DB)
+	userID := c.MustGet("UserID").(uint)
+	user, err := uh.DB.GetUserByID(context.Background(), userID)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
