@@ -19,9 +19,9 @@ func (d *PgDB) SaveUser(ctx context.Context, user *models.User) (*models.User, e
 	db := d.db.WithContext(ctx)
 
 	// Save the user using GORM's Create method
-	result := db.Create(user)
-	if result.Error != nil {
-		return &models.User{}, result.Error
+	err := db.Create(user).Error
+	if err != nil {
+		return nil, err
 	}
 
 	return user, nil

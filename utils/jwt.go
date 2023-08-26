@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/mohidex/identity-service/db"
 	"github.com/mohidex/identity-service/models"
 )
 
@@ -18,7 +19,7 @@ var (
 	tokenTTL   = os.Getenv("JWT_TTL")
 )
 
-func GenerateJwt(user models.User) (string, error) {
+func GenerateJwt(user *models.User) (string, error) {
 	tokenTtl, _ := strconv.Atoi(tokenTTL)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":  user.ID,
@@ -39,17 +40,17 @@ func ValidateJWT(ctx *gin.Context) error {
 	return errors.New("invalid token provided")
 }
 
-func CurrentUser(ctx *gin.Context) (models.User, error) {
+func CurrentUser(ctx *gin.Context, db db.Database) (*models.User, error) {
 	if err := ValidateJWT(ctx); err != nil {
-		return models.User{}, nil
+		return &models.User{}, err
 	}
 	token, _ := getToken(ctx)
 	claims, _ := token.Claims.(jwt.MapClaims)
 	userId := uint(claims["id"].(float64))
 
-	user, err := models.FindUserById(userId)
+	user, err := db.GetUserByID(ctx, userId)
 	if err != nil {
-		return models.User{}, err
+		return &models.User{}, err
 	}
 	return user, nil
 }
