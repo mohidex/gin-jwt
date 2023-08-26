@@ -2,29 +2,39 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/mohidex/identity-service/auth"
 	"github.com/mohidex/identity-service/controllers"
+	"github.com/mohidex/identity-service/db"
 	"github.com/mohidex/identity-service/middleware"
 )
 
-func NewRouter() *gin.Engine {
-	router := gin.New()
-	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
+type Routes struct {
+	db   db.Database
+	auth *auth.JWTAuthenticator
+}
 
-	health := new(controllers.HealthController)
+func NewRoutes(db db.Database, auth *auth.JWTAuthenticator) *Routes {
+	return &Routes{
+		db:   db,
+		auth: auth,
+	}
+}
+
+func (r *Routes) Setup(router *gin.Engine) {
+
+	health := &controllers.HealthController{}
 
 	router.GET("/health", health.Status)
 
+	// Create a new route group
 	v1 := router.Group("v1")
 	{
-		user := new(controllers.UserController)
-		v1.POST("/signup", user.Register)
-		v1.POST("/login", user.Login)
+		userHandler := &controllers.UserController{DB: r.db, Auth: r.auth}
+		v1.POST("/signup", userHandler.Register)
+		v1.POST("/login", userHandler.Login)
 
 		userRoutes := v1.Group("/user")
-		userRoutes.Use(middleware.JWTAuthMiddleware())
-		userRoutes.GET("/me", user.AutorizeToken)
+		userRoutes.Use(middleware.AuthMiddleware(r.auth))
+		userRoutes.GET("/me", userHandler.AutorizeToken)
 	}
-	return router
-
 }

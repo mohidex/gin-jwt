@@ -4,7 +4,6 @@ import (
 	"html"
 	"strings"
 
-	"github.com/mohidex/identity-service/settings"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -20,14 +19,6 @@ type User struct {
 	Admin    bool   `gorm:"not null;default:false" json:"is_admin"`
 }
 
-func (user *User) Save() (*User, error) {
-	db := settings.GetDB()
-	if result := db.Create(&user); result.Error != nil {
-		return &User{}, result.Error
-	}
-	return user, nil
-}
-
 func (user *User) BeforeSave(*gorm.DB) error {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -40,21 +31,4 @@ func (user *User) BeforeSave(*gorm.DB) error {
 
 func (user *User) ValidatePassword(password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-}
-
-func FindUserByUsername(username string) (User, error) {
-	var user User
-
-	if result := settings.DB.Where("username=?", username).Find(&user); result.Error != nil {
-		return User{}, result.Error
-	}
-	return user, nil
-}
-
-func FindUserById(id uint) (User, error) {
-	var user User
-	if err := settings.DB.Where("ID=?", id).Find(&user).Error; err != nil {
-		return User{}, err
-	}
-	return user, nil
 }
