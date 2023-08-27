@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/mohidex/identity-service/auth"
+	"github.com/mohidex/identity-service/models"
 )
 
 func AuthMiddleware(jwtAuth *auth.JWTAuthenticator) gin.HandlerFunc {
@@ -25,14 +26,34 @@ func AuthMiddleware(jwtAuth *auth.JWTAuthenticator) gin.HandlerFunc {
 		}
 
 		token := tokenParts[1]
-		userID, err := jwtAuth.VerifyToken(c, token)
+		reqUser, err := jwtAuth.VerifyToken(c, token)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
 		}
 
-		c.Set("UserID", userID) // Set the verified UserID in the context
+		c.Set("user", reqUser) // Set the verified user in the context
+		c.Next()
+	}
+}
+
+func AdminMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		requestUser, exists := c.Get("user")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User information not found"})
+			c.Abort()
+			return
+		}
+
+		user, ok := requestUser.(*models.RequestUser)
+		if !ok || !user.Admin {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access forbidden for non-admin users"})
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }

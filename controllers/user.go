@@ -40,8 +40,9 @@ func (uh UserController) Register(c *gin.Context) {
 		})
 		return
 	}
+
 	c.JSON(http.StatusCreated, gin.H{
-		"user": savedUser,
+		"user": savedUser.ToUserResponse(),
 	})
 }
 
@@ -69,7 +70,7 @@ func (uh UserController) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := uh.Auth.GenerateToken(context.Background(), user.ID)
+	token, err := uh.Auth.GenerateToken(context.Background(), user)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
@@ -82,14 +83,14 @@ func (uh UserController) Login(c *gin.Context) {
 }
 
 func (uh UserController) AutorizeToken(c *gin.Context) {
-	userID := c.MustGet("UserID").(uint)
-	user, err := uh.DB.GetUserByID(context.Background(), userID)
+	requestUser := c.MustGet("user").(*models.RequestUser)
+	user, err := uh.DB.GetUserByID(context.Background(), requestUser.ID)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"data": user,
+		"data": user.ToUserResponse(),
 	})
 }

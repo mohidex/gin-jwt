@@ -31,9 +31,12 @@ func main() {
 	if err = gormDB.AutoMigrate(&models.User{}); err != nil {
 		log.Fatal("Failed to auto-migrate:", err)
 	}
+
 	pgDB := db.NewPgDB(gormDB)
 	jwtAuth := auth.NewJWTAuthenticator(conf.JWTPrivateKey, conf.JWTTTL)
+
 	r := server.NewServer(pgDB, jwtAuth)
+
 	if err := r.Start(":5000"); err != nil {
 		panic("Failed to start server: " + err.Error())
 	}
