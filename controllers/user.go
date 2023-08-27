@@ -94,3 +94,14 @@ func (uh UserController) AutorizeToken(c *gin.Context) {
 		"data": user.ToUserResponse(),
 	})
 }
+
+func (uh UserController) GetUsers(c *gin.Context) {
+	users, err := uh.DB.GetAllUsers(context.Background())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"users": users,
+	})
+}
