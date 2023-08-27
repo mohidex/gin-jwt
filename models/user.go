@@ -32,3 +32,20 @@ func (user *User) BeforeSave(*gorm.DB) error {
 func (user *User) ValidatePassword(password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 }
+
+func (u *User) ToUserResponse() interface{} {
+	minimalUser := struct {
+		ID       uint   `json:"id"`
+		Name     string `json:"name"`
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		PhotoURL string `json:"photo_url"`
+	}{
+		ID:       u.ID,
+		Name:     u.Name,
+		Username: u.Username,
+		Email:    u.Email,
+		PhotoURL: u.PhotoURL,
+	}
+	return minimalUser
+}

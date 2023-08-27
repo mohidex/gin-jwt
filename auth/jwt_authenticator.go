@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/mohidex/identity-service/models"
 )
 
 var (
@@ -26,7 +27,7 @@ func NewJWTAuthenticator(secretKey string, ttlMinutes int) *JWTAuthenticator {
 	}
 }
 
-func (jm *JWTAuthenticator) GenerateToken(ctx context.Context, userID uint) (string, error) {
+func (jm *JWTAuthenticator) GenerateToken(ctx context.Context, user *models.User) (string, error) {
 	if ctx.Err() != nil {
 		return "", ctx.Err()
 	}
@@ -34,9 +35,12 @@ func (jm *JWTAuthenticator) GenerateToken(ctx context.Context, userID uint) (str
 	expirationTime := jm.clock().Add(time.Duration(jm.ttlMinutes) * time.Minute)
 
 	claims := jwt.MapClaims{
-		"sub": userID,
-		"iat": jm.clock().Unix(),
-		"exp": expirationTime.Unix(),
+		"sub":      user.ID,
+		"iat":      jm.clock().Unix(),
+		"exp":      expirationTime.Unix(),
+		"username": user.Username,
+		"email":    user.Email,
+		"is_admin": user.Admin,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -47,21 +51,32 @@ func (jm *JWTAuthenticator) GenerateToken(ctx context.Context, userID uint) (str
 	return signedToken, nil
 }
 
-func (jm *JWTAuthenticator) VerifyToken(ctx context.Context, token string) (uint, error) {
+func (jm *JWTAuthenticator) VerifyToken(ctx context.Context, token string) (*models.RequestUser, error) {
 	if ctx.Err() != nil {
-		return 0, ctx.Err()
+		return &models.RequestUser{}, ctx.Err()
 	}
 
 	claims, err := jm.verifyToken(token)
 	if err != nil {
-		return 0, err
+		return &models.RequestUser{}, err
 	}
 	userID, ok := claims["sub"].(float64)
 	if !ok {
-		return 0, ErrInvalidToken
+		return &models.RequestUser{}, ErrInvalidToken
 	}
 
-	return uint(userID), nil
+	username, _ := claims["username"].(string)
+	isAdmin, _ := claims["is_admin"].(bool)
+	email, _ := claims["email"].(string)
+
+	requestUser := &models.RequestUser{
+		ID:       uint(userID),
+		Username: username,
+		Email:    email,
+		Admin:    isAdmin,
+	}
+
+	return requestUser, nil
 }
 
 func (jm *JWTAuthenticator) verifyToken(tokenString string) (jwt.MapClaims, error) {

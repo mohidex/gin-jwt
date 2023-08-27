@@ -36,5 +36,10 @@ func (r *Routes) Setup(router *gin.Engine) {
 		userRoutes := v1.Group("/user")
 		userRoutes.Use(middleware.AuthMiddleware(r.auth))
 		userRoutes.GET("/me", userHandler.AutorizeToken)
+
+		adminRoutes := v1.Group("/admin")
+		adminRoutes.Use(middleware.AuthMiddleware(r.auth))
+		adminRoutes.Use(middleware.AdminMiddleware())
+		adminRoutes.GET("/users", userHandler.GetUsers)
 	}
 }
