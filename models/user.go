@@ -19,18 +19,18 @@ type User struct {
 	Admin    bool   `gorm:"not null;default:false" json:"is_admin"`
 }
 
-func (user *User) BeforeSave(*gorm.DB) error {
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+func (u *User) BeforeSave(*gorm.DB) error {
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	user.Password = string(passwordHash)
-	user.Username = html.EscapeString(strings.TrimSpace(user.Username))
+	u.Password = string(passwordHash)
+	u.Username = html.EscapeString(strings.TrimSpace(u.Username))
 	return nil
 }
 
-func (user *User) ValidatePassword(password string) error {
-	return bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+func (u *User) ValidatePassword(password string) error {
+	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 }
 
 func (u *User) ToUserResponse() interface{} {

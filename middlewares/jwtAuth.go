@@ -1,4 +1,4 @@
-package middleware
+package middlewares
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 	"github.com/mohidex/identity-service/models"
 )
 
-func AuthMiddleware(jwtAuth *auth.JWTAuthenticator) gin.HandlerFunc {
+func AuthMiddleware(jwtAuth auth.Authenticator) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
