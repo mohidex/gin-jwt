@@ -7,7 +7,6 @@ import (
 	"github.com/mohidex/identity-service/db"
 	"github.com/mohidex/identity-service/metricsutil"
 	"github.com/mohidex/identity-service/middlewares"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -26,10 +25,6 @@ func NewRoutes(db db.Database, auth auth.Authenticator, metricsutil metricsutil.
 }
 
 func (r *Routes) Setup(router *gin.Engine) {
-
-	prometheus.DefaultRegisterer.Unregister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
-	prometheus.DefaultRegisterer.Unregister(prometheus.NewGoCollector())
-
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	router.Use(middlewares.PrometheusMiddleware(r.metricsutil))
