@@ -8,7 +8,7 @@ type PrometheusMetrics struct {
 	RequestDuration     *prometheus.HistogramVec
 }
 
-func NewPrometheusMetrics() Metrics {
+func NewPrometheusMetrics() *PrometheusMetrics {
 	requestCounter := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_requests_total",
