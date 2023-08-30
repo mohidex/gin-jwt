@@ -5,22 +5,29 @@ import (
 	"github.com/mohidex/identity-service/auth"
 	"github.com/mohidex/identity-service/controllers"
 	"github.com/mohidex/identity-service/db"
-	"github.com/mohidex/identity-service/middleware"
+	"github.com/mohidex/identity-service/metricsutil"
+	"github.com/mohidex/identity-service/middlewares"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Routes struct {
-	db   db.Database
-	auth *auth.JWTAuthenticator
+	db          db.Database
+	auth        auth.Authenticator
+	metricsutil metricsutil.Metrics
 }
 
-func NewRoutes(db db.Database, auth *auth.JWTAuthenticator) *Routes {
+func NewRoutes(db db.Database, auth auth.Authenticator, metricsutil metricsutil.Metrics) *Routes {
 	return &Routes{
-		db:   db,
-		auth: auth,
+		db:          db,
+		auth:        auth,
+		metricsutil: metricsutil,
 	}
 }
 
 func (r *Routes) Setup(router *gin.Engine) {
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
+	router.Use(middlewares.PrometheusMiddleware(r.metricsutil))
 
 	health := &controllers.HealthController{}
 
@@ -34,12 +41,12 @@ func (r *Routes) Setup(router *gin.Engine) {
 		v1.POST("/login", userHandler.Login)
 
 		userRoutes := v1.Group("/user")
-		userRoutes.Use(middleware.AuthMiddleware(r.auth))
+		userRoutes.Use(middlewares.AuthMiddleware(r.auth))
 		userRoutes.GET("/me", userHandler.AutorizeToken)
 
 		adminRoutes := v1.Group("/admin")
-		adminRoutes.Use(middleware.AuthMiddleware(r.auth))
-		adminRoutes.Use(middleware.AdminMiddleware())
+		adminRoutes.Use(middlewares.AuthMiddleware(r.auth))
+		adminRoutes.Use(middlewares.AdminMiddleware())
 		adminRoutes.GET("/users", userHandler.GetUsers)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/mohidex/identity-service/auth"
 	"github.com/mohidex/identity-service/config"
 	"github.com/mohidex/identity-service/db"
+	"github.com/mohidex/identity-service/metricsutil"
 	"github.com/mohidex/identity-service/models"
 	"github.com/mohidex/identity-service/server"
 	"gorm.io/driver/postgres"
@@ -34,8 +35,9 @@ func main() {
 
 	pgDB := db.NewPgDB(gormDB)
 	jwtAuth := auth.NewJWTAuthenticator(conf.JWTPrivateKey, conf.JWTTTL)
+	metricsUtil := metricsutil.NewPrometheusMetrics()
 
-	r := server.NewServer(pgDB, jwtAuth)
+	r := server.NewServer(pgDB, jwtAuth, metricsUtil)
 
 	if err := r.Start(":5000"); err != nil {
 		panic("Failed to start server: " + err.Error())
