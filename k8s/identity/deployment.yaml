@@ -19,6 +19,14 @@ spec:
           image: mohidex/identity-module:main
           ports:
             - containerPort: 5000
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
           env:
             - name: DB_HOST
               value: "postgres"
