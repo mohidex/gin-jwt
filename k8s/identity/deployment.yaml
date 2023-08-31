@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: idnetity-dep
+  labels:
+    app: identity-dep
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: identity
+  template:
+    metadata:
+      labels:
+        app: identity
+    spec:
+      containers:
+        - name: identity
+          image: mohidex/identity-module:main
+          ports:
+            - containerPort: 5000
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          env:
+            - name: DB_HOST
+              value: "postgres"
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:        
+                  name: identity-sec
+                  key: DB_NAME  
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:        
+                  name: identity-sec
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:        
+                  name: identity-sec
+                  key: DB_PASSWORD
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:        
+                  name: identity-sec
+                  key: DB_PORT
+            - name: JWT_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:        
+                  name: identity-sec
+                  key: JWT_PRIVATE_KEY
+            - name: JWT_TTL
+              valueFrom:
+                secretKeyRef:        
+                  name: identity-sec
+                  key: JWT_TTL
