@@ -3,19 +3,19 @@ kind: Deployment
 metadata:
   name: idnetity-dep
   labels:
-    app: identity
+    app: identity-dep
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
-      app: idnetity
+      app: identity
   template:
     metadata:
       labels:
-        app: idnetity
+        app: identity
     spec:
       containers:
-        - name: idnetity
+        - name: identity
           image: mohidex/identity-module:main
           ports:
             - containerPort: 5000
