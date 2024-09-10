@@ -1,34 +1,52 @@
-FROM golang:alpine as builder
+# syntax=docker/dockerfile:1
+ARG GO_VERSION=1.22
+ARG ALPINE_VERSION=3.20
 
-LABEL maintainer="Mohidul Islam <mohidul.cs@gmail.com>"
-RUN apk update && apk add --no-cache git
+FROM golang:${GO_VERSION}-alpine AS base
 
-# Set the current working directory inside the container 
+RUN set -ex \
+    && apk update \
+    && apk add --no-cache ca-certificates \
+    bash \
+    git \
+    openssh \
+    gcc \
+    musl-dev \
+    linux-headers
+
+WORKDIR /src
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,source=go.sum,target=go.sum \
+    --mount=type=bind,source=go.mod,target=go.mod \
+    go mod download -x
+
+
+FROM base AS builder
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+ENV GOOS=$TARGETOS
+ENV GOARCH=$TARGETARCH
+ENV CGO_ENABLED=0
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,target=. \
+    go build -a -installsuffix cgo -o /bin/app .
+
+
+FROM base AS test
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,target=. \
+    go test -v -coverprofile=/tmp/coverage.txt ./... > /tmp/result.txt; \
+    [[ $? -eq 0 ]] || { cat /tmp/result.txt; exit 1; }
+
+FROM scratch AS export-test
+COPY --from=test /tmp/coverage.txt /
+COPY --from=test /tmp/result.txt /
+
+FROM scratch AS binaries
+COPY --from=builder  /bin/app /bin/app
+
+FROM alpine:${ALPINE_VERSION}
 WORKDIR /app
-
-# Copy go mod and sum files 
-COPY go.mod go.sum ./
-
-# Download all dependencies. Dependencies will be cached if the go.mod and the go.sum files are not changed 
-RUN go mod download 
-
-# Copy the source from the current directory to the working Directory inside the container 
-COPY . .
-
-# Build the Go app
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
-
-# Start a new stage from scratch
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-
-WORKDIR /root/
-
-# Copy the Pre-built binary file from the previous stage. Observe we also copied the .env file
-COPY --from=builder /app/main .
-
-# Expose port 5000 to the outside world
+COPY --from=builder /bin/app /bin/app
 EXPOSE 5000
-
-#Command to run the executable
-CMD ["./main"]
+ENTRYPOINT ["/bin/app"]

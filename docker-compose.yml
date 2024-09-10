@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   app:
     container_name: identity-module
@@ -12,9 +11,9 @@ services:
       - JWT_TTL=3600
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     ports: 
-      - 5000:5000 
+      - 5001:5000
     restart: on-failure
     volumes:
       - .:/app/
